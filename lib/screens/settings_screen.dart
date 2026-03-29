@@ -90,7 +90,7 @@ class SettingsScreen extends StatelessWidget {
           _SectionHeader('About'),
           ListTile(
             leading: const Icon(Icons.music_note_rounded),
-            title: const Text('Music Player'),
+            title: const Text('HM Player'),
             subtitle: const Text('Version 1.0.0 • Offline & Ad-free'),
           ),
           ListTile(

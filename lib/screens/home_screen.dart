@@ -60,7 +60,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text(
-          'Music',
+          'HM Player',
           style: TextStyle(fontWeight: FontWeight.w800, fontSize: 26),
         ),
         actions: [
