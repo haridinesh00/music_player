@@ -1,4 +1,4 @@
-# 🎵 Music Player — Advanced Flutter App
+# 🎵 HM Player — Advanced Music Player
 
 A **fully offline, local music player** built with Flutter, featuring Material Design 3, dynamic album art theming, background playback, a 5-band EQ, and a complete media library.
 
