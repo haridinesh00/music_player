@@ -655,18 +655,17 @@ class _VolumeSection extends StatelessWidget {
 }
 
 // ─── Queue Tab ────────────────────────────────────────────────
+// ─── Queue Tab ────────────────────────────────────────────────
 class _QueueTab extends StatelessWidget {
   const _QueueTab();
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final audio = context.read<AudioProvider>();
 
-    return StreamBuilder<List<MediaItem>>(
-      stream: audio.mediaItemStream.map((_) => audio.queue),
-      initialData: audio.queue,
-      builder: (ctx, snap) {
+    // Fix 1: Use Consumer so it rebuilds anytime the AudioProvider notifies listeners
+    return Consumer<AudioProvider>(
+      builder: (ctx, audio, child) {
         final queue = audio.queue;
         final currentIdx = audio.currentIndex ?? 0;
 
@@ -676,14 +675,21 @@ class _QueueTab extends StatelessWidget {
 
         return ReorderableListView.builder(
           padding: const EdgeInsets.only(top: 8, bottom: 16),
-          onReorder: (from, to) =>
-              audio.moveQueueItem(from, to > from ? to - 1 : to),
+          onReorder: (from, to) {
+            // ReorderableListView behaves weirdly when moving items down, this fixes the math
+            if (to > from) to -= 1; 
+            audio.moveQueueItem(from, to);
+          },
           itemCount: queue.length,
           itemBuilder: (ctx, i) {
             final item = queue[i];
             final isCurrent = i == currentIdx;
+
             return ListTile(
-              key: ValueKey('queue_$i'),
+              // Fix 2: MUST use item.id for the key, NOT the index!
+              // If you use the index, Flutter gets confused when an item is deleted.
+              key: ValueKey(item.id), 
+              
               leading: isCurrent
                   ? Icon(Icons.equalizer_rounded, color: cs.primary)
                   : Text('${i + 1}',
@@ -703,7 +709,7 @@ class _QueueTab extends StatelessWidget {
                 item.artist ?? '',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontSize: 12),
+                style: const TextStyle(fontSize: 12),
               ),
               trailing: Row(
                 mainAxisSize: MainAxisSize.min,
