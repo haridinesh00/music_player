@@ -1,5 +1,6 @@
 // lib/screens/playlists_screen.dart
 import 'package:flutter/material.dart';
+import 'package:music_player/widgets/mini_player.dart';
 import 'package:provider/provider.dart';
 
 import '../models/models.dart';
@@ -162,7 +163,7 @@ class _FavoritesTile extends StatelessWidget {
                 Text(
                   '${lib.favorites.length} songs',
                   style: TextStyle(
-                      color: cs.onErrorContainer.withOpacity(0.7),
+                      color: cs.onErrorContainer.withValues(alpha: 0.7),
                       fontSize: 13),
                 ),
               ],
@@ -202,7 +203,7 @@ class _PlaylistTile extends StatelessWidget {
       subtitle: Text(
         '${playlist.songIds.length} songs',
         style:
-            TextStyle(fontSize: 12, color: cs.onSurface.withOpacity(0.6)),
+            TextStyle(fontSize: 12, color: cs.onSurface.withValues(alpha: 0.6)),
       ),
       trailing: PopupMenuButton<String>(
         onSelected: (action) =>
@@ -215,7 +216,7 @@ class _PlaylistTile extends StatelessWidget {
               child: Text('Delete',
                   style: TextStyle(color: Colors.red))),
         ],
-        child: Icon(Icons.more_vert, color: cs.onSurface.withOpacity(0.5)),
+        child: Icon(Icons.more_vert, color: cs.onSurface.withValues(alpha: 0.5)),
       ),
       onTap: () => Navigator.push(
         context,
@@ -328,7 +329,7 @@ class PlaylistDetailScreen extends StatelessWidget {
                     children: [
                       Text('${songs.length} songs',
                           style: TextStyle(
-                              color: cs.onSurface.withOpacity(0.6),
+                              color: cs.onSurface.withValues(alpha: 0.6),
                               fontSize: 13)),
                       const Spacer(),
                       FilledButton.icon(
@@ -416,6 +417,12 @@ class FavoritesScreen extends StatelessWidget {
               itemBuilder: (ctx, i) =>
                   SongTile(song: songs[i], queue: songs),
             ),
+      bottomNavigationBar: const SafeArea(
+        child: Padding(
+          padding: EdgeInsets.only(bottom: 10.0), // Tweak this number if you want more/less space!
+          child: MiniPlayer(),
+        ),
+      ),
     );
   }
 }

@@ -304,17 +304,14 @@ class LibraryProvider extends ChangeNotifier {
       // NEW: Extract all unique folders from the raw device scan
       Set<String> folders = {};
       for (var m in songModels) {
-        if (m.data != null) {
-          folders.add(File(m.data!).parent.path);
-        }
+        folders.add(File(m.data).parent.path);
       }
       _allAvailableFolders = folders.toList()..sort();
 
       // NEW: Filter songModels if user has selected specific folders
       if (_allowedFolders.isNotEmpty) {
         songModels = songModels.where((m) {
-          if (m.data == null) return false;
-          final parentPath = File(m.data!).parent.path;
+          final parentPath = File(m.data).parent.path;
           return _allowedFolders.contains(parentPath);
         }).toList();
       }

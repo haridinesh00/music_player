@@ -50,6 +50,7 @@ class Song {
         artist: artist,
         album: album,
         duration: Duration(milliseconds: duration),
+        artUri: Uri.parse('content://media/external/audio/media/$id/albumart'),
         extras: {'songId': id, 'albumId': albumId},
       );
 

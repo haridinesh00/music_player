@@ -1,4 +1,5 @@
 // lib/screens/now_playing_screen.dart
+import 'dart:developer';
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
@@ -7,7 +8,6 @@ import 'package:provider/provider.dart';
 
 import '../providers/audio_provider.dart';
 import '../providers/library_provider.dart';
-import '../providers/playlist_provider.dart';
 import '../services/audio_handler.dart';
 import '../utils/extensions.dart';
 import '../widgets/equalizer_widget.dart';
@@ -93,8 +93,6 @@ class _NowPlayingBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final size = MediaQuery.of(context).size;
-    final isTablet = size.width > 600;
 
     return SafeArea(
       child: Column(
@@ -156,7 +154,7 @@ class _TopBar extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
-                    color: cs.onSurface.withOpacity(0.5),
+                    color: cs.onSurface.withValues(alpha: 0.5),
                     letterSpacing: 1.2,
                   ),
                 ),
@@ -196,7 +194,9 @@ class _TopBar extends StatelessWidget {
                   context: context,
                   isScrollControlled: true,
                   builder: (ctx) => DraggableScrollableSheet(
-                    initialChildSize: 0.7,
+                    initialChildSize: 0.65,
+                    maxChildSize: 0.65,
+                    minChildSize: 0.4,
                     expand: false,
                     builder: (_, controller) => SingleChildScrollView(
                       controller: controller,
@@ -325,7 +325,7 @@ class _ArtworkSection extends StatelessWidget {
                 borderRadius: BorderRadius.circular(24),
                 boxShadow: [
                   BoxShadow(
-                    color: cs.primary.withOpacity(0.3),
+                    color: cs.primary.withValues(alpha: 0.3),
                     blurRadius: 40,
                     offset: const Offset(0, 16),
                   ),
@@ -337,6 +337,9 @@ class _ArtworkSection extends StatelessWidget {
                     ? QueryArtworkWidget(
                         id: albumId,
                         type: ArtworkType.ALBUM,
+                        size: 2000, // Tells Android to fetch a massive, high-res version
+                        quality: 100, // Max compression quality
+                        artworkQuality: FilterQuality.high,
                         artworkBorder: BorderRadius.zero,
                         artworkWidth:
                             MediaQuery.of(context).size.width - 80,
@@ -356,7 +359,7 @@ class _ArtworkSection extends StatelessWidget {
   }
 
   Widget _fallback(ColorScheme cs) {
-    final size = 300.0;
+    const size = 300.0;
     return Container(
       width: size,
       height: size,
@@ -403,7 +406,7 @@ class _SongInfo extends StatelessWidget {
                 item.artist ?? 'Unknown Artist',
                 style: TextStyle(
                   fontSize: 15,
-                  color: cs.onSurface.withOpacity(0.7),
+                  color: cs.onSurface.withValues(alpha: 0.7),
                   fontWeight: FontWeight.w500,
                 ),
                 maxLines: 1,
@@ -413,7 +416,7 @@ class _SongInfo extends StatelessWidget {
                 item.album ?? '',
                 style: TextStyle(
                   fontSize: 13,
-                  color: cs.onSurface.withOpacity(0.45),
+                  color: cs.onSurface.withValues(alpha: 0.45),
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -434,7 +437,7 @@ class _SongInfo extends StatelessWidget {
                   key: ValueKey(isFav),
                   icon: Icon(
                     isFav ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                    color: isFav ? cs.error : cs.onSurface.withOpacity(0.4),
+                    color: isFav ? cs.error : cs.onSurface.withValues(alpha: 0.4),
                     size: 28,
                   ),
                   onPressed: () {
@@ -443,7 +446,7 @@ class _SongInfo extends StatelessWidget {
                        final songModel = libraryProvider.songs.firstWhere((s) => s.id == songId);
                        libraryProvider.toggleFavorite(songModel);
                     } catch (e) {
-                      print("Song not found in library for favorites");
+                      log("Song not found in library for favorites");
                     }
                   },
                 ),
@@ -505,13 +508,13 @@ class _ProgressSection extends StatelessWidget {
                     position.mmss, // Assuming you have an extension for .mmss
                     style: TextStyle(
                         fontSize: 12,
-                        color: cs.onSurface.withOpacity(0.6)),
+                        color: cs.onSurface.withValues(alpha: 0.6)),
                   ),
                   Text(
                     duration.mmss,
                     style: TextStyle(
                         fontSize: 12,
-                        color: cs.onSurface.withOpacity(0.6)),
+                        color: cs.onSurface.withValues(alpha: 0.6)),
                   ),
                 ],
               ),
@@ -542,8 +545,8 @@ class _ControlsSection extends StatelessWidget {
           builder: (ctx, snap) {
             final on = snap.data ?? false;
             return IconButton(
-              icon: Icon(Icons.shuffle_rounded, size: 24),
-              color: on ? cs.primary : cs.onSurface.withOpacity(0.4),
+              icon: const Icon(Icons.shuffle_rounded, size: 24),
+              color: on ? cs.primary : cs.onSurface.withValues(alpha: 0.4),
               onPressed: audio.toggleShuffle,
             );
           },
@@ -572,7 +575,7 @@ class _ControlsSection extends StatelessWidget {
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: cs.primary.withOpacity(0.4),
+                      color: cs.primary.withValues(alpha: 0.4),
                       blurRadius: 20,
                       offset: const Offset(0, 6),
                     ),
@@ -610,7 +613,7 @@ class _ControlsSection extends StatelessWidget {
                 size: 24,
               ),
               color: mode == LoopMode.off
-                  ? cs.onSurface.withOpacity(0.4)
+                  ? cs.onSurface.withValues(alpha: 0.4)
                   : cs.primary,
               onPressed: audio.cycleRepeatMode,
             );
@@ -636,7 +639,7 @@ class _VolumeSection extends StatelessWidget {
         return Row(
           children: [
             Icon(Icons.volume_down_rounded,
-                size: 20, color: cs.onSurface.withOpacity(0.5)),
+                size: 20, color: cs.onSurface.withValues(alpha: 0.5)),
             Expanded(
               child: Slider(
                 value: vol,
@@ -646,7 +649,7 @@ class _VolumeSection extends StatelessWidget {
               ),
             ),
             Icon(Icons.volume_up_rounded,
-                size: 20, color: cs.onSurface.withOpacity(0.5)),
+                size: 20, color: cs.onSurface.withValues(alpha: 0.5)),
           ],
         );
       },
@@ -694,7 +697,7 @@ class _QueueTab extends StatelessWidget {
                   ? Icon(Icons.equalizer_rounded, color: cs.primary)
                   : Text('${i + 1}',
                       style: TextStyle(
-                          color: cs.onSurface.withOpacity(0.4))),
+                          color: cs.onSurface.withValues(alpha: 0.4))),
               title: Text(
                 item.title,
                 maxLines: 1,
@@ -716,13 +719,13 @@ class _QueueTab extends StatelessWidget {
                 children: [
                   IconButton(
                     icon: Icon(Icons.close, size: 18,
-                        color: cs.onSurface.withOpacity(0.4)),
+                        color: cs.onSurface.withValues(alpha: 0.4)),
                     onPressed: () => audio.removeFromQueue(i),
                   ),
                   ReorderableDragStartListener(
                     index: i,
                     child: Icon(Icons.drag_handle,
-                        color: cs.onSurface.withOpacity(0.4)),
+                        color: cs.onSurface.withValues(alpha: 0.4)),
                   ),
                 ],
               ),

@@ -1,4 +1,6 @@
 // lib/services/audio_handler.dart
+import 'dart:developer';
+
 import 'package:audio_service/audio_service.dart';
 import 'package:audio_session/audio_session.dart';
 import 'package:just_audio/just_audio.dart';
@@ -7,7 +9,12 @@ import 'package:rxdart/rxdart.dart';
 enum RepeatMode { none, all, one }
 
 class MusicAudioHandler extends BaseAudioHandler with SeekHandler {
-  final _player = AudioPlayer();
+  // 1. Declare the Equalizer first
+  final AndroidEqualizer equalizer = AndroidEqualizer();
+
+  // 2. Declare the player using 'late final' so we can initialize it with the pipeline later
+  late final AudioPlayer _player;
+  
   final _playlist = ConcatenatingAudioSource(children: []);
 
   // Public streams
@@ -35,6 +42,19 @@ class MusicAudioHandler extends BaseAudioHandler with SeekHandler {
       );
 
   MusicAudioHandler() {
+    // 3. Initialize the player WITH the equalizer plugged in
+    _player = AudioPlayer(
+      audioPipeline: AudioPipeline(
+        androidAudioEffects: [
+          equalizer, 
+        ],
+      ),
+    );
+
+    // 4. Turn the equalizer on!
+    equalizer.setEnabled(true);
+    
+    // 5. Run your normal initialization
     _init();
   }
 
@@ -157,18 +177,18 @@ class MusicAudioHandler extends BaseAudioHandler with SeekHandler {
   }
 
   @override
-  Future<void> setShuffleMode(AudioServiceShuffleMode mode) async {
-    await _player.setShuffleModeEnabled(mode == AudioServiceShuffleMode.all);
+  Future<void> setShuffleMode(AudioServiceShuffleMode shuffleMode) async {
+    await _player.setShuffleModeEnabled(shuffleMode == AudioServiceShuffleMode.all);
   }
 
   @override
-  Future<void> setRepeatMode(AudioServiceRepeatMode mode) async {
+  Future<void> setRepeatMode(AudioServiceRepeatMode repeatMode) async {
     await _player.setLoopMode({
       AudioServiceRepeatMode.none: LoopMode.off,
       AudioServiceRepeatMode.one: LoopMode.one,
       AudioServiceRepeatMode.all: LoopMode.all,
       AudioServiceRepeatMode.group: LoopMode.all,
-    }[mode]!);
+    }[repeatMode]!);
   }
 
   // ─── Queue Management ────────────────────────────────────────
@@ -221,6 +241,7 @@ class MusicAudioHandler extends BaseAudioHandler with SeekHandler {
 
   // ─── Volume & Speed ──────────────────────────────────────────
   Future<void> setVolume(double volume) => _player.setVolume(volume);
+  @override
   Future<void> setSpeed(double speed) => _player.setSpeed(speed);
 
   // ─── Crossfade ───────────────────────────────────────────────
@@ -234,6 +255,79 @@ class MusicAudioHandler extends BaseAudioHandler with SeekHandler {
       case 'setVolume':
         await setVolume(extras!['volume'] as double);
         break;
+    }
+  }
+
+  // @override
+  // Future<void> playFromUri(Uri uri, [Map<String, dynamic>? extras]) async {
+  //   // 1. Clean up the messy URI path into a readable song title
+  //   final pathString = Uri.decodeFull(uri.path);
+  //   final fileName = pathString.split('/').last; 
+
+  //   // 2. Create the MediaItem for the Mini-Player UI
+  //   final externalItem = MediaItem(
+  //     id: uri.toString(),
+  //     title: fileName,
+  //     artist: 'External File',
+  //   );
+
+  //   // 3. Update the AudioService Queue (Updates your UI)
+  //   final currentQueue = queue.value;
+  //   currentQueue.add(externalItem);
+  //   queue.add(currentQueue); 
+
+  //   // 4. Create the actual Just Audio source
+  //   // CRITICAL: We use AudioSource.uri() so it can read the 'content://' scheme!
+  //   final audioSource = AudioSource.uri(
+  //     uri,
+  //     tag: externalItem, 
+  //   );
+
+  //   try {
+  //     // 5. Inject the song directly into Just Audio's engine
+  //     // 👇 NOTE: Change '_playlist' to whatever you named your ConcatenatingAudioSource! 👇
+  //     await _playlist.add(audioSource); 
+      
+  //     // 6. Skip to the end of the queue (where we just put the song) and hit play
+  //     // 👇 NOTE: Change '_player' to whatever you named your AudioPlayer instance! 👇
+  //     await _player.seek(Duration.zero, index: currentQueue.length - 1);
+  //     await _player.play();
+  //   } catch (e) {
+  //     log('Error playing external file: $e');
+  //   }
+  // }
+
+  @override
+  Future<void> playFromUri(Uri uri, [Map<String, dynamic>? extras]) async {
+    final pathString = Uri.decodeFull(uri.path);
+    final fileName = pathString.split('/').last; 
+
+    final externalItem = MediaItem(
+      id: uri.toString(),
+      title: fileName,
+      artist: 'External File',
+    );
+
+    // FIX 1: Create a brand NEW list so the UI stream actually recognizes the change
+    final currentQueue = List<MediaItem>.from(queue.value);
+    currentQueue.add(externalItem);
+    queue.add(currentQueue); // This now triggers a proper UI queue update
+
+    final audioSource = AudioSource.uri(
+      uri,
+      tag: externalItem, 
+    );
+
+    try {
+      await _playlist.add(audioSource); 
+      
+      // FIX 2: Explicitly shout to the rest of the app "THIS is the new song!"
+      mediaItem.add(externalItem);
+
+      await _player.seek(Duration.zero, index: currentQueue.length - 1);
+      await _player.play();
+    } catch (e) {
+      log('Error playing external file: $e');
     }
   }
 

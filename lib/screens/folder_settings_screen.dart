@@ -32,7 +32,7 @@ class FolderSettingsScreen extends StatelessWidget {
             padding: const EdgeInsets.all(16.0),
             child: Text(
               'Select the folders you want to fetch music from. If no folders are selected, the app will scan your entire device.',
-              style: TextStyle(color: cs.onSurface.withOpacity(0.7)),
+              style: TextStyle(color: cs.onSurface.withValues(alpha: 0.7)),
             ),
           ),
           Expanded(

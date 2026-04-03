@@ -1,11 +1,8 @@
-// lib/widgets/equalizer_widget.dart
-//
-// Visual EQ with 5 bands. Values are persisted via SharedPreferences.
-// Actual audio DSP requires the `equalizer_flutter` or a custom
-// AudioEffect platform channel — hook into those in AudioHandler.
-
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:just_audio/just_audio.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart'; // 👇 Added this back!
+import '../providers/audio_provider.dart';
 
 class EqualizerWidget extends StatefulWidget {
   const EqualizerWidget({super.key});
@@ -15,12 +12,7 @@ class EqualizerWidget extends StatefulWidget {
 }
 
 class _EqualizerWidgetState extends State<EqualizerWidget> {
-  static const _bands = ['60Hz', '230Hz', '910Hz', '4kHz', '14kHz'];
-  static const _min = -12.0;
-  static const _max = 12.0;
-
-  late List<double> _gains;
-  bool _enabled = true;
+  String _activePreset = 'Custom';
 
   static const _presets = {
     'Flat': [0.0, 0.0, 0.0, 0.0, 0.0],
@@ -36,181 +28,227 @@ class _EqualizerWidgetState extends State<EqualizerWidget> {
   @override
   void initState() {
     super.initState();
-    _gains = List.filled(_bands.length, 0.0);
-    _loadPrefs();
+    _loadPrefs(); // 👇 Load the preset when the bottom sheet opens
   }
 
+  // ─── Persistence Logic ──────────────────────────────────────────
   Future<void> _loadPrefs() async {
-    final p = await SharedPreferences.getInstance();
-    setState(() {
-      _enabled = p.getBool('eq_enabled') ?? true;
-      for (int i = 0; i < _bands.length; i++) {
-        _gains[i] = p.getDouble('eq_band_$i') ?? 0.0;
-      }
-    });
-  }
-
-  Future<void> _savePrefs() async {
-    final p = await SharedPreferences.getInstance();
-    await p.setBool('eq_enabled', _enabled);
-    for (int i = 0; i < _bands.length; i++) {
-      await p.setDouble('eq_band_$i', _gains[i]);
+    final prefs = await SharedPreferences.getInstance();
+    // Use 'mounted' check since this is async and the sheet might close quickly
+    if (mounted) { 
+      setState(() {
+        _activePreset = prefs.getString('eq_active_preset') ?? 'Custom';
+      });
     }
   }
 
-  void _applyPreset(String name) {
+  Future<void> _savePrefs(String presetName) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('eq_active_preset', presetName);
+  }
+
+  void _applyPreset(String name, List<AndroidEqualizerBand> bands, double min, double max) {
+    final preset = _presets[name]!;
+
+    for (int i = 0; i < bands.length; i++) {
+      int presetIndex = (i * 5 / bands.length).floor().clamp(0, 4);
+      double targetGain = preset[presetIndex].clamp(min, max);
+      bands[i].setGain(targetGain);
+    }
+
     setState(() {
-      _gains = List<double>.from(_presets[name]!);
+      _activePreset = name;
     });
-    _savePrefs();
+    
+    _savePrefs(name); // 👇 Save it to memory!
   }
 
   @override
   Widget build(BuildContext context) {
+    final eq = context.read<AudioProvider>().equalizer;
     final cs = Theme.of(context).colorScheme;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // ── Header ──────────────────────────────────────────────
-        Row(
+    return FutureBuilder<AndroidEqualizerParameters>(
+      future: eq.parameters,
+      builder: (context, snapshot) {
+        final params = snapshot.data;
+        
+        if (params == null) {
+          return const SizedBox(
+            height: 300,
+            child: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Text('Equalizer',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    )),
-            const Spacer(),
-            Switch(value: _enabled, onChanged: (v) {
-              setState(() => _enabled = v);
-              _savePrefs();
-            }),
-          ],
-        ),
-        const SizedBox(height: 16),
-
-        // ── Presets ─────────────────────────────────────────────
-        SizedBox(
-          height: 36,
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            children: _presets.keys
-                .map((name) => Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: FilterChip(
-                        label: Text(name),
-                        selected: _isPreset(name),
-                        onSelected: (_) => _applyPreset(name),
-                      ),
-                    ))
-                .toList(),
-          ),
-        ),
-        const SizedBox(height: 24),
-
-        // ── Bands ───────────────────────────────────────────────
-        AnimatedOpacity(
-          opacity: _enabled ? 1.0 : 0.4,
-          duration: const Duration(milliseconds: 200),
-          child: IgnorePointer(
-            ignoring: !_enabled,
-            child: SizedBox(
-              height: 220,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: List.generate(
-                  _bands.length,
-                  (i) => Expanded(
-                    child: _BandSlider(
-                      label: _bands[i],
-                      value: _gains[i],
-                      min: _min,
-                      max: _max,
-                      onChanged: (v) {
-                        setState(() => _gains[i] = v);
-                        _savePrefs();
+            // ── Header ──────────────────────────────────────────────
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Custom EQ',
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                ),
+                StreamBuilder<bool>(
+                  stream: eq.enabledStream,
+                  initialData: eq.enabled,
+                  builder: (context, enabledSnap) {
+                    final isEnabled = enabledSnap.data ?? false;
+                    return Switch(
+                      value: isEnabled,
+                      onChanged: (value) async {
+                        await eq.setEnabled(value);
+                        setState(() {}); 
                       },
+                    );
+                  }
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+
+            // ── Presets ─────────────────────────────────────────────
+            StreamBuilder<bool>(
+              stream: eq.enabledStream,
+              initialData: eq.enabled,
+              builder: (context, enabledSnap) {
+                final isEnabled = enabledSnap.data ?? false;
+                
+                return AnimatedOpacity(
+                  opacity: isEnabled ? 1.0 : 0.4,
+                  duration: const Duration(milliseconds: 200),
+                  child: IgnorePointer(
+                    ignoring: !isEnabled,
+                    child: SizedBox(
+                      height: 36,
+                      child: ListView(
+                        scrollDirection: Axis.horizontal,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: FilterChip(
+                              label: const Text('Custom'),
+                              selected: _activePreset == 'Custom',
+                              onSelected: (_) {
+                                setState(() => _activePreset = 'Custom');
+                                _savePrefs('Custom');
+                              },
+                            ),
+                          ),
+                          ..._presets.keys.map((name) => Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: FilterChip(
+                              label: Text(name),
+                              selected: _activePreset == name,
+                              onSelected: (_) => _applyPreset(name, params.bands, params.minDecibels, params.maxDecibels),
+                            ),
+                          )),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }
+            ),
+            const SizedBox(height: 32),
+            
+            // ── Bands ───────────────────────────────────────────────
+            StreamBuilder<bool>(
+              stream: eq.enabledStream,
+              initialData: eq.enabled,
+              builder: (context, enabledSnap) {
+                final isEnabled = enabledSnap.data ?? false;
+                
+                return SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: params.bands.map((band) {
+                      return _buildSlider(band, params.minDecibels, params.maxDecibels, isEnabled);
+                    }).toList(),
+                  ),
+                );
+              }
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildSlider(AndroidEqualizerBand band, double min, double max, bool isEnabled) {
+    final cs = Theme.of(context).colorScheme;
+    
+    final freq = band.centerFrequency;
+    final freqText = freq >= 1000 
+        ? '${(freq / 1000).toStringAsFixed(0)}k' 
+        : '${freq.round()}';
+
+    return StreamBuilder<double>(
+      stream: band.gainStream,
+      initialData: band.gain,
+      builder: (context, snapshot) {
+        final currentGain = snapshot.data ?? 0.0;
+        
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+          child: Column(
+            children: [
+              Text(
+                '${currentGain > 0 ? '+' : ''}${currentGain.round()} dB',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: isEnabled ? cs.primary : cs.onSurface.withOpacity(0.4),
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                height: 220,
+                child: RotatedBox(
+                  quarterTurns: 3,
+                  child: SliderTheme(
+                    data: SliderTheme.of(context).copyWith(
+                      trackHeight: 4,
+                      disabledActiveTrackColor: cs.onSurface.withOpacity(0.2),
+                      disabledInactiveTrackColor: cs.onSurface.withOpacity(0.1),
+                      disabledThumbColor: cs.onSurface.withOpacity(0.4),
+                    ),
+                    child: Slider(
+                      min: min,
+                      max: max,
+                      value: currentGain,
+                      onChanged: isEnabled 
+                          ? (newValue) {
+                              band.setGain(newValue); 
+                              // 👇 If they drag a slider manually, switch to "Custom" AND save it
+                              if (_activePreset != 'Custom') {
+                                setState(() {
+                                  _activePreset = 'Custom';
+                                });
+                                _savePrefs('Custom');
+                              }
+                            }
+                          : null,
                     ),
                   ),
                 ),
               ),
-            ),
+              const SizedBox(height: 12),
+              Text(
+                freqText,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: cs.onSurface.withOpacity(0.6),
+                ),
+              ),
+            ],
           ),
-        ),
-
-        const SizedBox(height: 12),
-        // dB scale hint
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text('+12 dB',
-                style: TextStyle(fontSize: 11, color: cs.outline)),
-            Text('0 dB',
-                style: TextStyle(fontSize: 11, color: cs.outline)),
-            Text('-12 dB',
-                style: TextStyle(fontSize: 11, color: cs.outline)),
-          ],
-        ),
-      ],
-    );
-  }
-
-  bool _isPreset(String name) {
-    final preset = _presets[name]!;
-    for (int i = 0; i < preset.length; i++) {
-      if ((_gains[i] - preset[i]).abs() > 0.01) return false;
-    }
-    return true;
-  }
-}
-
-class _BandSlider extends StatelessWidget {
-  final String label;
-  final double value;
-  final double min;
-  final double max;
-  final ValueChanged<double> onChanged;
-
-  const _BandSlider({
-    required this.label,
-    required this.value,
-    required this.min,
-    required this.max,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final displayGain =
-        value >= 0 ? '+${value.toStringAsFixed(1)}' : value.toStringAsFixed(1);
-
-    return Column(
-      children: [
-        Text(
-          displayGain,
-          style: TextStyle(
-            fontSize: 10,
-            color: value.abs() > 0.1 ? cs.primary : cs.outline,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        Expanded(
-          child: RotatedBox(
-            quarterTurns: 3,
-            child: Slider(
-              value: value,
-              min: min,
-              max: max,
-              divisions: 24,
-              onChanged: onChanged,
-            ),
-          ),
-        ),
-        Text(
-          label,
-          style: TextStyle(fontSize: 10, color: cs.outline),
-        ),
-      ],
+        );
+      }
     );
   }
 }

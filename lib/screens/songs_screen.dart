@@ -1,5 +1,6 @@
 // lib/screens/songs_screen.dart
 import 'package:flutter/material.dart';
+import 'package:music_player/models/models.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/audio_provider.dart';
@@ -58,7 +59,7 @@ class SongsScreen extends StatelessWidget {
 }
 
 class _SongsList extends StatelessWidget {
-  final songs;
+  final List<Song> songs;
   final AudioProvider audio;
 
   const _SongsList({required this.songs, required this.audio});
@@ -77,7 +78,7 @@ class _SongsList extends StatelessWidget {
                 Text(
                   '${songs.length} songs',
                   style: TextStyle(
-                    color: cs.onSurface.withOpacity(0.6),
+                    color: cs.onSurface.withValues(alpha: 0.6),
                     fontSize: 13,
                   ),
                 ),
@@ -154,7 +155,7 @@ class _NoPermission extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color:
-                      Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                      Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                 ),
               ),
               const SizedBox(height: 28),
@@ -192,7 +193,7 @@ class _EmptyLibrary extends StatelessWidget {
                 color: Theme.of(context)
                     .colorScheme
                     .onSurface
-                    .withOpacity(0.6),
+                    .withValues(alpha: 0.6),
               ),
             ),
           ],

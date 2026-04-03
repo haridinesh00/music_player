@@ -108,4 +108,6 @@ class AudioProvider extends ChangeNotifier {
   // ─── Volume ──────────────────────────────────────────────────
   Future<void> setVolume(double v) => _handler.setVolume(v);
   Stream<double> get volumeStream => _handler.volumeStream;
+  // Expose the equalizer so the UI sliders can talk to it
+  AndroidEqualizer get equalizer => _handler.equalizer;
 }

@@ -25,7 +25,6 @@ class PlaylistProvider extends ChangeNotifier {
 
   // ─── CRUD ────────────────────────────────────────────────────
   Future<Playlist> create(String name) async {
-    final now = DateTime.now().toIso8601String();
     final p = Playlist(name: name);
     final saved = await _db.savePlaylist(p);
     _playlists.add(saved);

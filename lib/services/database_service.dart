@@ -60,16 +60,21 @@ class DatabaseService {
   Future<Playlist> createPlaylist(String name) async {
     final d = await db;
     final now = DateTime.now().toIso8601String();
-    final p = Playlist(name: name, createdAt: DateTime.now());
+    // final p = Playlist(name: name, createdAt: DateTime.now());
     final id = await d.insert('playlists', {
       'name': name,
       'song_ids': '',
       'created_at': now,
       'updated_at': now,
     });
-    return p.copyWith()..songIds.clear();
-    // Return with proper id
+        
+    // Return with proper id from the database so the object is fully populated
     final row = await d.query('playlists', where: 'id = ?', whereArgs: [id]);
+    
+    if (row.isEmpty) {
+      throw Exception('Failed to create playlist'); // Safety check!
+    }
+    
     return Playlist.fromMap(row.first);
   }
 

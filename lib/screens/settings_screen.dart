@@ -14,7 +14,6 @@ class SettingsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = context.watch<ThemeProvider>();
     final lib = context.read<LibraryProvider>();
-    final cs = Theme.of(context).colorScheme;
 
     return Scaffold(
       appBar: AppBar(
@@ -24,7 +23,7 @@ class SettingsScreen extends StatelessWidget {
       body: ListView(
         children: [
           // ── Appearance ────────────────────────────────────────
-          _SectionHeader('Appearance'),
+          const _SectionHeader('Appearance'),
           ListTile(
             leading: const Icon(Icons.dark_mode_outlined),
             title: const Text('Theme'),
@@ -40,7 +39,7 @@ class SettingsScreen extends StatelessWidget {
           ),
 
           // ── Library ───────────────────────────────────────────
-          _SectionHeader('Library'),
+          const _SectionHeader('Library'),
           ListTile(
             leading: const Icon(Icons.refresh_rounded),
             title: const Text('Rescan library'),
@@ -67,7 +66,7 @@ class SettingsScreen extends StatelessWidget {
           ),
 
           // ── Audio ─────────────────────────────────────────────
-          _SectionHeader('Audio'),
+          const _SectionHeader('Audio'),
           ListTile(
             leading: const Icon(Icons.equalizer_rounded),
             title: const Text('Equalizer'),
@@ -87,11 +86,11 @@ class SettingsScreen extends StatelessWidget {
           ),
 
           // ── About ─────────────────────────────────────────────
-          _SectionHeader('About'),
-          ListTile(
-            leading: const Icon(Icons.music_note_rounded),
-            title: const Text('HM Player'),
-            subtitle: const Text('Version 1.0.0 • Offline & Ad-free'),
+          const _SectionHeader('About'),
+          const ListTile(
+            leading: Icon(Icons.music_note_rounded),
+            title: Text('HM Player'),
+            subtitle: Text('Version 1.0.0 • Offline & Ad-free'),
           ),
           ListTile(
             leading: const Icon(Icons.storage_outlined),

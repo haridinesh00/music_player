@@ -55,7 +55,7 @@ class SongTile extends StatelessWidget {
         overflow: TextOverflow.ellipsis,
         style: TextStyle(
           fontSize: 12,
-          color: cs.onSurface.withOpacity(0.6),
+          color: cs.onSurface.withValues(alpha: 0.6),
         ),
       ),
       trailing: Row(
@@ -67,14 +67,14 @@ class SongTile extends StatelessWidget {
               lib.isFavorite(song.id) ? Icons.favorite : Icons.favorite_border,
               size: 20,
               color:
-                  lib.isFavorite(song.id) ? cs.error : cs.onSurface.withOpacity(0.4),
+                  lib.isFavorite(song.id) ? cs.error : cs.onSurface.withValues(alpha: 0.4),
             ),
             onPressed: () => lib.toggleFavorite(song),
           ),
           // More options
           IconButton(
             icon: Icon(Icons.more_vert,
-                size: 20, color: cs.onSurface.withOpacity(0.4)),
+                size: 20, color: cs.onSurface.withValues(alpha: 0.4)),
             onPressed: () => _showOptions(context, audio, lib),
           ),
         ],
@@ -223,7 +223,7 @@ class _SongOptionsSheet extends StatelessWidget {
                     Text(song.artist,
                         style: TextStyle(
                             fontSize: 13,
-                            color: cs.onSurface.withOpacity(0.6)),
+                            color: cs.onSurface.withValues(alpha: 0.6)),
                         maxLines: 1),
                   ],
                 ),

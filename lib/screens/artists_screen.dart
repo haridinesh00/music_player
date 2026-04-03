@@ -55,7 +55,7 @@ class _ArtistTile extends StatelessWidget {
       subtitle: Text(
         '${artist.numberOfTracks} songs • ${artist.numberOfAlbums} albums',
         style:
-            TextStyle(fontSize: 12, color: cs.onSurface.withOpacity(0.6)),
+            TextStyle(fontSize: 12, color: cs.onSurface.withValues(alpha: 0.6)),
       ),
       trailing: Icon(Icons.chevron_right, color: cs.outline),
       onTap: () => Navigator.push(
@@ -106,7 +106,7 @@ class ArtistDetailScreen extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 80,
                       fontWeight: FontWeight.w800,
-                      color: cs.primary.withOpacity(0.3),
+                      color: cs.primary.withValues(alpha: 0.3),
                     ),
                   ),
                 ),
@@ -129,7 +129,7 @@ class ArtistDetailScreen extends StatelessWidget {
                       Text(
                         '${artist.numberOfAlbums} albums',
                         style: TextStyle(
-                            color: cs.onSurface.withOpacity(0.6),
+                            color: cs.onSurface.withValues(alpha: 0.6),
                             fontSize: 13),
                       ),
                     ],

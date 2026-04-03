@@ -114,8 +114,8 @@ class ThemeProvider extends ChangeNotifier {
       sliderTheme: SliderThemeData(
         activeTrackColor: scheme.primary,
         thumbColor: scheme.primary,
-        inactiveTrackColor: scheme.primary.withOpacity(0.24),
-        overlayColor: scheme.primary.withOpacity(0.12),
+        inactiveTrackColor: scheme.primary.withValues(alpha: 0.24),
+        overlayColor: scheme.primary.withValues(alpha: 0.12),
       ),
       cardTheme: CardThemeData(
         elevation: 0,

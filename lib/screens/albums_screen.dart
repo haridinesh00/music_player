@@ -98,7 +98,7 @@ class _AlbumCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontSize: 12,
-                        color: cs.onSurface.withOpacity(0.6),
+                        color: cs.onSurface.withValues(alpha: 0.6),
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -108,7 +108,7 @@ class _AlbumCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis, // Added to prevent wrapping
                       style: TextStyle(
                         fontSize: 11,
-                        color: cs.onSurface.withOpacity(0.4),
+                        color: cs.onSurface.withValues(alpha: 0.4),
                       ),
                     ),
                   ],
@@ -168,7 +168,7 @@ class AlbumDetailScreen extends StatelessWidget {
                         end: Alignment.bottomCenter,
                         colors: [
                           Colors.transparent,
-                          Colors.black.withOpacity(0.7),
+                          Colors.black.withValues(alpha: 0.7),
                         ],
                       ),
                     ),
@@ -191,7 +191,7 @@ class AlbumDetailScreen extends StatelessWidget {
                       Text(
                         '${songs.length} songs${album.firstYear != null ? ' • ${album.firstYear}' : ''}',
                         style: TextStyle(
-                            color: cs.onSurface.withOpacity(0.6),
+                            color: cs.onSurface.withValues(alpha: 0.6),
                             fontSize: 13),
                       ),
                     ],
